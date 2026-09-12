@@ -43,7 +43,7 @@ if("serviceWorker" in navigator && /^https?:/.test(location.protocol)){
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v66")){
+      if(!k.includes("v67")){
         caches.delete(k);
       }
     });
@@ -854,6 +854,8 @@ table.data-table tr:hover { background: var(--teal-light); }
             <table class="data-table">
               <thead>
                 <tr>
+                  <th>ئوقۇغۇچى</th>
+                  <th>تېلېفون</th>
                   <th>ۋاقتى</th>
                   <th>دائىرىسى</th>
                   <th>سوئال سانى</th>
@@ -862,7 +864,7 @@ table.data-table tr:hover { background: var(--teal-light); }
                 </tr>
               </thead>
               <tbody id="examsTableBody">
-                <tr><td colspan="5" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>
               </tbody>
             </table>
           </div>
@@ -3268,6 +3270,16 @@ function loadStudentData(){
             renderStudentsTableOnly();
           }
         }
+        if(d && d.exams && Array.isArray(d.exams) && d.exams.length){
+          var curAllEx = JSON.parse(localStorage.getItem("uytibb_all_exams")||"[]");
+          d.exams.forEach(function(ex){
+            if(!curAllEx.some(function(e){ return e.when === ex.when && e.name === ex.name && e.pct === ex.pct; })){
+              curAllEx.unshift(ex);
+            }
+          });
+          localStorage.setItem("uytibb_all_exams", JSON.stringify(curAllEx));
+          renderExamsTable(curAllEx);
+        }
       }).catch(function(){});
 
     // FALLBACK: Supabase direct
@@ -3312,26 +3324,47 @@ function loadStudentData(){
     }
 
     renderStudentsTableOnly();
-
-    // Exams
-    var exams = prog.exams || [];
-    var tbodyEx = document.getElementById("examsTableBody");
-    if(tbodyEx && exams.length){
-      tbodyEx.innerHTML = "";
-      exams.forEach(function(ex){
-        var tr = document.createElement("tr");
-        var isPass = ex.pct >= 60;
-        tr.innerHTML = '<td>' + esc(ex.when||"") + '</td>'
-          + '<td>' + esc(ex.scope||"ئومۇمىي") + '</td>'
-          + '<td>' + ex.count + ' سوئال</td>'
-          + '<td><b>%' + ex.pct + '</b></td>'
-          + '<td><span class="badge ' + (isPass?'badge-green':'badge-red') + '">' + (isPass?'ئۆتتى ✅':'قايتا سىناڭ') + '</span></td>';
-        tbodyEx.appendChild(tr);
-      });
-    }
-
+    renderExamsTable();
     updateDashboardStats();
   } catch(e){ console.error("loadStudentData error:", e); }
+}
+
+function renderExamsTable(examsList){
+  var tbodyEx = document.getElementById("examsTableBody");
+  if(!tbodyEx) return;
+  var allEx = examsList;
+  if(!Array.isArray(allEx)){
+    var curAllEx = JSON.parse(localStorage.getItem("uytibb_all_exams")||"[]");
+    var prog = JSON.parse(localStorage.getItem("uytibb_v1")||"{}");
+    var localEx = prog.exams || [];
+    allEx = curAllEx.slice();
+    localEx.forEach(function(le){
+      if(!allEx.some(function(e){ return e.when === le.when && e.pct === le.pct; })){
+        allEx.push(Object.assign({ name: (prog.user ? prog.user.name : "ئوقۇغۇچى"), phone: (prog.user ? prog.user.phone : "") }, le));
+      }
+    });
+  }
+  if(!allEx.length){
+    tbodyEx.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>';
+    return;
+  }
+  tbodyEx.innerHTML = "";
+  allEx.forEach(function(ex){
+    var tr = document.createElement("tr");
+    var isPass = (ex.pct != null ? ex.pct : ex.score) >= 60;
+    var sName = ex.name || (ex.student_name ? ex.student_name : "ئوقۇغۇچى");
+    var sPhone = ex.phone || ex.student_phone || "-";
+    var pctVal = ex.pct != null ? ex.pct : (ex.score != null ? ex.score : 0);
+    var countVal = ex.count != null ? ex.count : (ex.total_questions != null ? ex.total_questions : 0);
+    tr.innerHTML = '<td><b>' + esc(sName) + '</b></td>'
+      + '<td dir="ltr" style="text-align:right">' + esc(sPhone) + '</td>'
+      + '<td>' + esc(ex.when || ex.taken_at || "") + '</td>'
+      + '<td>' + esc(ex.scope || "ئومۇمىي") + '</td>'
+      + '<td>' + countVal + ' سوئال</td>'
+      + '<td><b>%' + pctVal + '</b></td>'
+      + '<td><span class="badge ' + (isPass?'badge-green':'badge-red') + '">' + (isPass?'ئۆتتى ✅':'قايتا سىناڭ') + '</span></td>';
+    tbodyEx.appendChild(tr);
+  });
 }
 
 function showApprovalNoticeModal(studentName, studentPhone){

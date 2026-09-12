@@ -48,7 +48,7 @@ if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v66")){
+      if(!k.includes("v67")){
         caches.delete(k);
       }
     });
@@ -646,7 +646,6 @@ a.node.nlink.d1{color:#0f766e}a.node.nlink.d2{color:#1d4ed8}a.node.nlink.d3{colo
 </nav>
 </div>
 <button class="topbtn" id="topbtn" title="يۇقىرىغا">▲</button>
-<a class="fab" href="#/ai" title="ئەقىللىق ياردەمچى"><svg viewBox="0 0 48 48" fill="currentColor"><path d="M24 4c1 8 4 13 6 15-2 2-5 7-6 15-1-8-4-13-6-15 2-2 5-7 6-15z"/><path d="M38 25c.5 4 2 6.5 3 7.5-1 1-2.5 3.5-3 7.5-.5-4-2-6.5-3-7.5 1-1 2.5-3.5 3-7.5z"/><path d="M10 29c.5 4 2 6.5 3 7.5-1 1-2.5 3.5-3 7.5-.5-4-2-6.5-3-7.5 1-1 2.5-3.5 3-7.5z"/><circle cx="36" cy="11" r="3"/><circle cx="11" cy="13" r="2.4"/></svg></a>
 
 
 
@@ -1072,6 +1071,7 @@ function qHTML(q, key, idx, visible){
     h+='</div>';
   } else if(q.type==="essay"){
     h+='<textarea class="essay-ta" placeholder="جاۋابىڭىزنى تەپسىلىي بايان قىلىپ يېزىڭ…"></textarea>';
+    h+='<div class="model-ans" id="model_'+key+'" style="display:none;background:#e8f4f1;border:1.5px solid #0e7c6f;border-radius:10px;padding:.85rem 1rem;margin-top:.7rem;line-height:1.8;color:#0a5c52"></div>';
   }
   if(q.exp) h+='<div class="exp">💡 <b>چۈشەندۈرۈش:</b> '+esc(q.exp)+'</div>';
   else if(q.type==="blank"||q.type==="match") h+='<div class="exp">💡 جاۋابنى تەكشۈرۈپ كۆرۈڭ.</div>';
@@ -1086,16 +1086,32 @@ function checkQuestion(q, key){
     var correct = q.type==="choice"? q.a : (q.a?1:0);
     var sel=box.querySelector('input[name="r_'+key+'"]:checked');
     box.querySelectorAll("label").forEach(function(lb){ lb.classList.remove("opt-ok","opt-bad"); });
+    var exp=box.querySelector(".exp");
+    var correctText = q.type==="choice" ? (q.opts ? q.opts[correct] : "") : (q.a ? "توغرا" : "خاتا");
     if(sel){
       res.done=true;
       var v=parseInt(sel.value,10);
-      if(v===correct){ res.score=1; box.classList.add("correct"); }
-      else { box.classList.add("wrong"); }
+      if(v===correct){ 
+        res.score=1; 
+        box.classList.add("correct"); 
+      } else { 
+        box.classList.add("wrong"); 
+        if(exp){
+          exp.innerHTML = '❌ <b>خاتا جاۋاب.</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+        }
+      }
       box.querySelectorAll("label").forEach(function(lb){
         if(parseInt(lb.getAttribute("data-i"),10)===correct) lb.classList.add("opt-ok");
         else if(sel && lb.contains(sel)) lb.classList.add("opt-bad");
       });
-    } else { box.classList.add("wrong"); var cl=box.querySelector('label[data-i="'+correct+'"]'); if(cl) cl.classList.add("opt-ok"); }
+    } else { 
+      box.classList.add("wrong"); 
+      var cl=box.querySelector('label[data-i="'+correct+'"]'); 
+      if(cl) cl.classList.add("opt-ok"); 
+      if(exp){
+        exp.innerHTML = '⚠️ <b>بوش قالدۇرۇلدى.</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+      }
+    }
   } else if(q.type==="blank"){
     var inps=box.querySelectorAll(".blank-inp"), ok=0;
     inps.forEach(function(inp){
@@ -1123,19 +1139,42 @@ function checkQuestion(q, key){
     });
     res.score = rows.length? okm/rows.length : 0;
     box.classList.add(okm===rows.length?"correct":"wrong");
+    var exp=box.querySelector(".exp");
+    if(exp && okm!==rows.length){
+      var matchPairs = q.pairs.map(function(p){ return '• <b>' + esc(p[0]) + '</b> ➔ ' + esc(p[1]); }).join('<br>');
+      exp.innerHTML = '💡 <b>توغرا تۇتاشتۇرۇش:</b><br>' + matchPairs + (q.exp ? ('<br>📝 ' + esc(q.exp)) : '');
+    }
   } else if(q.type==="essay"){
-    res.max=1;
-    var ta=box.querySelector("textarea");
-    var val=ta?norm(ta.value):"";
-    if(val.length>=4){
-      res.score=1;
-      res.done=true;
+    res.max = 1;
+    var ta = box.querySelector("textarea");
+    var val = ta ? norm(ta.value) : "";
+    var mBox = box.querySelector(".model-ans");
+    var correctAns = q.model || q.exp || (Array.isArray(q.a) ? q.a.join("، ") : q.a) || "";
+
+    if(val.length >= 6){
+      res.score = 1;
+      res.done = true;
       box.classList.remove("wrong");
       box.classList.add("correct");
+      if(mBox){
+        mBox.style.display = "block";
+        mBox.style.background = "#e8f4f1";
+        mBox.style.borderColor = "#0e7c6f";
+        mBox.style.color = "#0a5c52";
+        mBox.innerHTML = '<div style="color:#0a5c52;font-weight:bold;margin-bottom:4px">✅ جاۋابىڭىز قوبۇل قىلىندى!</div><b style="color:#0a5c52">📖 پايدىلىنىش ئۈلگە جاۋابى:</b><br>' + correctAns;
+      }
     } else {
-      res.score=0;
+      res.score = 0;
+      if(val.length > 0) res.done = true;
       box.classList.remove("correct");
       box.classList.add("wrong");
+      if(mBox){
+        mBox.style.display = "block";
+        mBox.style.background = "#fef2f2";
+        mBox.style.borderColor = "#ef4444";
+        mBox.style.color = "#991b1b";
+        mBox.innerHTML = '<div style="color:#b91c1c;font-weight:bold;margin-bottom:4px">❌ جاۋابىڭىز خاتا ياكى تولۇق ئەمەس!</div><b style="color:#0a5c52">✅ توغرا ئۈلگە جاۋاب:</b><br>' + correctAns;
+      }
     }
   }
   return res;
@@ -1383,9 +1422,29 @@ function submitExam(auto){
   var used=Math.round((Date.now()-examState.startAt)/1000), um=Math.floor(used/60), us=used%60;
   var s=getProg();
   var d=new Date(), when=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+d.getHours()+":"+(d.getMinutes()<10?"0":"")+d.getMinutes();
-  s.exams.push({when:when, scope:examState.scope, count:examState.pool.length, pct:pct, by:byLid});
+  var exObj = {
+    name: (s.user ? s.user.name : "ئوقۇغۇچى"),
+    phone: (s.user ? s.user.phone : ""),
+    when: when,
+    scope: examState.scope || "ئومۇمىي سىناق",
+    count: examState.pool.length,
+    pct: pct,
+    by: byLid
+  };
+  s.exams.push(exObj);
   saveProg(s);
   checkBadges();
+
+  try {
+    fetch("/api/students", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "exam", exam: exObj })
+    }).catch(function(){});
+    var allEx = JSON.parse(localStorage.getItem("uytibb_all_exams") || "[]");
+    allEx.unshift(exObj);
+    localStorage.setItem("uytibb_all_exams", JSON.stringify(allEx.slice(0, 500)));
+  } catch(e){}
   var nEssay=examState.pool.filter(function(it){return it.q.type==="essay";}).length;
   var h='<div class="result-hero"><div>🎓 سىناق نەتىجىڭىز '+(auto?"(ۋاقىت توشتى)":"")+'</div>'
     +'<div class="big">%'+pct+'</div>'
@@ -2058,11 +2117,10 @@ function vBooks(){
       + '  <h3 style="margin:.3rem 0;font-size:1.1rem;color:var(--teal-dark)">' + esc(L.title || pTitle) + '</h3>'
       + '  <p style="color:var(--muted);font-size:.85rem;line-height:1.6;margin-bottom:.9rem">' + esc(L.desc || L.subtitle || (L.title + " ھەققىدىكى ئەسلى تېبابەت دەرسلىك كىتابى")) + '</p>'
       + '</div>'
-      + '<div style="border-top:1px solid var(--line);padding-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap">'
-      + '  <a class="btn btn-gold btn-sm" href="' + esc(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + esc(L.id) + '\', \'' + esc(pUrl) + '\', \'' + esc(pTitle) + '\')" style="flex:1;text-align:center;justify-content:center;text-decoration:none;font-weight:bold;color:#2e2200;border-radius:10px;padding:.6rem;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem">'
+      + '<div style="border-top:1px solid var(--line);padding-top:.85rem">'
+      + '  <a class="btn btn-gold btn-sm" href="' + esc(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + esc(L.id) + '\', \'' + esc(pUrl) + '\', \'' + esc(pTitle) + '\')" style="width:100%;text-align:center;justify-content:center;text-decoration:none;font-weight:bold;color:#2e2200;border-radius:10px;padding:.65rem;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem">'
       + '    <span>🚀</span> كىتابنى ئوقۇش (PDF) ↗'
       + '  </a>'
-      + '  <button class="btn btn-line btn-sm" onclick="showPdfViewerModal(\'' + esc(pUrl) + '\', \'' + esc(pTitle) + '\')" style="padding:.5rem .7rem" title="ئىچكى كۆرۈنۈش">👁 كۆرۈش</button>'
       + '</div>'
       + '</div>';
   });
@@ -2078,11 +2136,10 @@ function vBooks(){
       + '  <h3 style="margin:.3rem 0;font-size:1.1rem;color:var(--teal-dark)">' + esc(b.title) + '</h3>'
       + '  <p style="color:var(--muted);font-size:.85rem;line-height:1.6;margin-bottom:.9rem">' + esc(b.subtitle || b.desc || "قوشۇمچە تېبابەت PDF كىتابى") + '</p>'
       + '</div>'
-      + '<div style="border-top:1px solid var(--line);padding-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap">'
-      + '  <a class="btn btn-teal btn-sm" href="' + esc(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + esc(b.id) + '\', \'' + esc(pUrl) + '\', \'' + esc(b.title) + '\')" style="flex:1;text-align:center;justify-content:center;text-decoration:none;font-weight:bold;color:#fff;border-radius:10px;padding:.6rem;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem">'
+      + '<div style="border-top:1px solid var(--line);padding-top:.85rem">'
+      + '  <a class="btn btn-teal btn-sm" href="' + esc(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + esc(b.id) + '\', \'' + esc(pUrl) + '\', \'' + esc(b.title) + '\')" style="width:100%;text-align:center;justify-content:center;text-decoration:none;font-weight:bold;color:#fff;border-radius:10px;padding:.65rem;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem">'
       + '    <span>🚀</span> كىتابنى ئوقۇش (PDF) ↗'
       + '  </a>'
-      + '  <button class="btn btn-line btn-sm" onclick="showPdfViewerModal(\'' + esc(pUrl) + '\', \'' + esc(b.title) + '\')" style="padding:.5rem .7rem" title="ئىچكى كۆرۈنۈش">👁 كۆرۈش</button>'
       + '</div>'
       + '</div>';
   });
@@ -2528,13 +2585,9 @@ function router(){
     return;
   }
 
-  // 8. AI Tutor
+  // 8. AI Tutor (Disabled as requested)
   if(hash === "#/ai"){
-    main.innerHTML = vAI();
-    aiInit();
-    renderNav();
-    window.scrollTo(0,0);
-    var tb = $("topbtn"); if(tb) tb.style.display = "none";
+    location.hash = "#/";
     return;
   }
 

@@ -463,9 +463,8 @@ function renderBooks(filter){
       + '  <h3 style="margin:.3rem 0;font-size:1.15rem;color:var(--teal-dark)">' + escHtml(pdfTitle) + '</h3>'
       + '  <p style="color:var(--muted);font-size:.88rem;line-height:1.6;margin-bottom:1rem">' + escHtml(subtitle) + '</p>'
       + '</div>'
-      + '<div style="border-top:1px solid var(--line);padding-top:.85rem;display:flex;gap:.5rem">'
-      + '  <a class="btn btn-gold" href="' + escHtml(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + escHtml(L.id) + '\', \'' + escHtml(pUrl) + '\', \'' + escHtml(pdfTitle) + '\')" style="flex:1;text-align:center;text-decoration:none;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;gap:.3rem;color:#2e2200;font-weight:bold">🚀 كىتابنى ئوقۇش (PDF) ↗</a>'
-      + '  <button class="btn btn-line btn-sm" onclick="showPdfViewerModal(\'' + escHtml(pUrl) + '\', \'' + escHtml(pdfTitle) + '\')" style="font-size:.85rem;cursor:pointer" title="ئىچكى كۆرۈنۈش">👁 كۆرۈش</button>'
+      + '<div style="border-top:1px solid var(--line);padding-top:.85rem">'
+      + '  <a class="btn btn-gold" href="' + escHtml(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + escHtml(L.id) + '\', \'' + escHtml(pUrl) + '\', \'' + escHtml(pdfTitle) + '\')" style="width:100%;text-align:center;text-decoration:none;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;color:#2e2200;font-weight:bold;padding:.65rem">🚀 كىتابنى ئوقۇش (PDF) ↗</a>'
       + '</div>'
       + '</div>';
   });
@@ -485,9 +484,8 @@ function renderBooks(filter){
       + '  <h3 style="margin:.3rem 0;font-size:1.15rem;color:var(--teal-dark)">' + escHtml(title) + '</h3>'
       + '  <p style="color:var(--muted);font-size:.88rem;line-height:1.6;margin-bottom:1rem">' + escHtml(subtitle) + '</p>'
       + '</div>'
-      + '<div style="border-top:1px solid var(--line);padding-top:.85rem;display:flex;gap:.5rem">'
-      + '  <a class="btn btn-teal" href="' + escHtml(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + escHtml(b.id) + '\', \'' + escHtml(pUrl) + '\', \'' + escHtml(title) + '\')" style="flex:1;text-align:center;text-decoration:none;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;gap:.3rem;color:#fff;font-weight:bold">🚀 كىتابنى ئوقۇش (PDF) ↗</a>'
-      + '  <button class="btn btn-line btn-sm" onclick="showPdfViewerModal(\'' + escHtml(pUrl) + '\', \'' + escHtml(title) + '\')" style="font-size:.85rem;cursor:pointer" title="ئىچكى كۆرۈنۈش">👁 كۆرۈش</button>'
+      + '<div style="border-top:1px solid var(--line);padding-top:.85rem">'
+      + '  <a class="btn btn-teal" href="' + escHtml(pUrl) + '" target="_blank" onclick="handleBookLinkClick(event, \'' + escHtml(b.id) + '\', \'' + escHtml(pUrl) + '\', \'' + escHtml(title) + '\')" style="width:100%;text-align:center;text-decoration:none;font-size:.92rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;color:#fff;font-weight:bold;padding:.65rem">🚀 كىتابنى ئوقۇش (PDF) ↗</a>'
       + '</div>'
       + '</div>';
   });
