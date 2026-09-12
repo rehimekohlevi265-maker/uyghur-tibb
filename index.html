@@ -49,7 +49,7 @@ if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v68")){
+      if(!k.includes("v69")){
         caches.delete(k);
       }
     });
@@ -692,7 +692,7 @@ function forceAppUpdate(){
 
 (function autoRepairLessonsCache(){
   try {
-    var CURRENT_VER = "v68_20260912_model_ans_fix";
+    var CURRENT_VER = "v69_20260912_fix_toggle_model_answer";
     var savedVer = localStorage.getItem("uytibb_app_ver");
     if(savedVer !== CURRENT_VER){
       localStorage.removeItem("uytibb_custom_lessons");
@@ -1034,6 +1034,33 @@ function bindTree(box){
 }
 function mmBtns(box){ box.querySelectorAll("li").forEach(function(li){ var b=(li.firstElementChild?li.firstElementChild.querySelector(".tgl"):null); if(b) b.textContent = li.classList.contains("closed")?"+":"−"; }); }
 
+/* ===== ئۈلگە جاۋابنى كۆرسىتىش / يوشۇرۇش ===== */
+var _lastModelToggleTime = 0;
+var _lastModelToggleKey = "";
+function toggleModelAnswer(key, btnEl){
+  var now = Date.now();
+  if(key === _lastModelToggleKey && (now - _lastModelToggleTime) < 250){
+    return;
+  }
+  _lastModelToggleTime = now;
+  _lastModelToggleKey = key;
+
+  var m = $("model_" + key);
+  if(!m) return;
+  var btn = btnEl || document.querySelector('[data-model="' + key + '"]');
+  var isVisible = m.classList.contains("show") || (m.style.display === "block") || (window.getComputedStyle && window.getComputedStyle(m).display !== "none");
+  if(isVisible){
+    m.classList.remove("show");
+    m.style.display = "none";
+    if(btn) btn.textContent = "📖 توغرا ئۈلگە جاۋابنى كۆرۈش";
+  } else {
+    m.classList.add("show");
+    m.style.display = "block";
+    if(btn) btn.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
+  }
+}
+window.toggleModelAnswer = toggleModelAnswer;
+
 /* ===== سۇئال رېندېرلاش ===== */
 function quizHTML(L, questions){
   var types=["all","choice","tf","blank","match","essay"];
@@ -1079,7 +1106,7 @@ function qHTML(q, key, idx, visible){
     h+='<textarea class="essay-ta" placeholder="جاۋابىڭىزنى تەپسىلىي بايان قىلىپ يېزىڭ…"></textarea>';
     if(!isTakingExam){
       h+='<div style="margin-top:.6rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">'
-        +'  <button class="btn btn-line btn-sm" data-model="'+key+'" type="button" style="font-size:.85rem;cursor:pointer;padding:.4rem .85rem;border-radius:8px;display:inline-flex;align-items:center;gap:.3rem">📖 توغرا ئۈلگە جاۋابنى كۆرۈش</button>'
+        +'  <button class="btn btn-line btn-sm" data-model="'+key+'" type="button" onclick="toggleModelAnswer(\''+key+'\', this); return false;" style="font-size:.85rem;cursor:pointer;padding:.4rem .85rem;border-radius:8px;display:inline-flex;align-items:center;gap:.3rem">📖 توغرا ئۈلگە جاۋابنى كۆرۈش</button>'
         +'</div>';
     }
     h+='<div class="model" id="model_'+key+'" style="display:none">'
@@ -1217,23 +1244,6 @@ function checkQuestion(q, key){
 function bindQuiz(box, L, isExam){
   box.querySelectorAll(".chip").forEach(function(c){
     c.onclick=function(){ quizFilter=c.getAttribute("data-f"); renderTabBody(L); };
-  });
-  box.querySelectorAll("[data-model]").forEach(function(b){
-    b.onclick=function(e){
-      e.preventDefault();
-      var m = $("model_" + b.getAttribute("data-model"));
-      if(!m) return;
-      var isShown = (m.style.display === "block" || m.classList.contains("show"));
-      if(isShown){
-        m.style.display = "none";
-        m.classList.remove("show");
-        b.textContent = "📖 توغرا ئۈلگە جاۋابنى كۆرۈش";
-      } else {
-        m.style.display = "block";
-        m.classList.add("show");
-        b.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
-      }
-    };
   });
   if(isExam) return;
   $("btnCheck").onclick=function(){
@@ -1738,9 +1748,6 @@ function vReview(){
   return h;
 }
 function bindReview(){
-  document.querySelectorAll("[data-model]").forEach(function(b){
-    b.onclick=function(){ var m=$("model_"+b.getAttribute("data-model")); m.classList.toggle("show"); b.textContent=m.classList.contains("show")?"📕 ئۈلگە جاۋابنى يوشۇرۇش":"📖 ئۈلگە جاۋابنى كۆرۈش"; };
-  });
   var rt=$("btnRetry"); if(rt) rt.onclick=function(){ router(); };
   var bc=$("btnCheck"); if(!bc) return;
   bc.onclick=function(){
@@ -2792,25 +2799,6 @@ function bindTabs(){
 }
 function stopTimer(){ if(timerInt){clearInterval(timerInt);timerInt=null;} }
 window.addEventListener("hashchange", router);
-document.addEventListener("click", function(e){
-  var btn = e.target.closest("[data-model]");
-  if(btn){
-    e.preventDefault();
-    var key = btn.getAttribute("data-model");
-    var m = $("model_" + key);
-    if(!m) return;
-    var isShown = (m.style.display === "block" || m.classList.contains("show"));
-    if(isShown){
-      m.style.display = "none";
-      m.classList.remove("show");
-      btn.textContent = "📖 توغرا ئۈلگە جاۋابنى كۆرۈش";
-    } else {
-      m.style.display = "block";
-      m.classList.add("show");
-      btn.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
-    }
-  }
-});
 document.addEventListener("DOMContentLoaded", function(){
   initTheme(); initViewMode();  bindRegBtn(); loadCustomData(); renderNav(); router();
   var phb = $("pwaHeaderBtn");

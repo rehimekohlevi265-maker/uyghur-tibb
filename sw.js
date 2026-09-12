@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uytibb-v68-20260912_model_ans_fix_and_full_quiz';
+const CACHE_NAME = 'uytibb-v69-20260912_fix_toggle_model_answer';
 const ASSETS = [
   './',
   './data.js',
