@@ -43,7 +43,7 @@ if("serviceWorker" in navigator && /^https?:/.test(location.protocol)){
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v67")){
+      if(!k.includes("v68")){
         caches.delete(k);
       }
     });

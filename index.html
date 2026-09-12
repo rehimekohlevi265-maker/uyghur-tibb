@@ -14,6 +14,7 @@
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="icon" href="icon-512.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="data.js"></script>
 <script>
 var _deferredPrompt = null;
 var _pendingInstall = false;
@@ -48,15 +49,17 @@ if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v67")){
+      if(!k.includes("v68")){
         caches.delete(k);
       }
     });
   });
 }
 try {
-  var _lrk = "uytibb_launch_reset_v65";
+  var _lrk = "uytibb_launch_reset_v68";
   if (!localStorage.getItem(_lrk)) {
+    localStorage.removeItem("uytibb_custom_lessons");
+    localStorage.removeItem("uytibb_app_ver");
     localStorage.removeItem("uytibb_all_students");
     localStorage.removeItem("uytibb_deleted_phones");
     localStorage.removeItem("uytibb_deleted_names");
@@ -358,9 +361,10 @@ li.closed>.node{box-shadow:0 2px 10px rgba(201,162,39,.35)}
 .mrow.ok .l{outline:2px solid var(--green)} .mrow.bad .l{outline:2px solid var(--red)}
 .essay-ta{width:100%;min-height:100px;border:2px solid var(--line);border-radius:10px;font-family:inherit;
   font-size:.95rem;padding:.5rem .7rem;line-height:2}
-.model{display:none;background:#f2fbf8;border:1px dashed var(--teal);border-radius:10px;padding:.5rem .8rem;
-  margin-top:.5rem;font-size:.92rem}
-.model.show{display:block}
+.model{display:none;background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;padding:.85rem 1rem;
+  margin-top:.7rem;font-size:.93rem;line-height:1.9;color:#065f46;box-shadow:0 2px 8px rgba(16,185,129,.12)}
+.model.show{display:block!important}
+.model.model-wrong{background:#fef2f2!important;border-color:#ef4444!important;color:#991b1b!important}
 .scorebar{position:sticky;bottom:calc(var(--tabh) + 10px);background:#fff;border:2px solid var(--teal);
   border-radius:var(--radius);box-shadow:var(--shadow);padding:.6rem .8rem;display:flex;gap:.6rem;align-items:center;
   flex-wrap:wrap;margin-top:.8rem;z-index:5}
@@ -688,7 +692,7 @@ function forceAppUpdate(){
 
 (function autoRepairLessonsCache(){
   try {
-    var CURRENT_VER = "v49_20260911_force_all";
+    var CURRENT_VER = "v68_20260912_model_ans_fix";
     var savedVer = localStorage.getItem("uytibb_app_ver");
     if(savedVer !== CURRENT_VER){
       localStorage.removeItem("uytibb_custom_lessons");
@@ -1047,6 +1051,7 @@ function quizHTML(L, questions){
   return h;
 }
 function qHTML(q, key, idx, visible){
+  var isTakingExam = (key && key.indexOf("ex_") === 0);
   var h='<div class="q" id="q_'+key+'" data-type="'+q.type+'" style="'+(visible?"":"display:none")+'">';
   h+='<div class="qh"><span class="qn">'+(idx+1)+'</span><div><span class="qt">'+esc(q.q)+'</span><br><span class="qtype">'+QTICON[q.type]+' '+QTYPES[q.type]+'</span></div></div>';
   if(q.type==="choice"){
@@ -1070,11 +1075,24 @@ function qHTML(q, key, idx, visible){
     });
     h+='</div>';
   } else if(q.type==="essay"){
+    var modelAns = q.model || q.exp || (Array.isArray(q.a) ? q.a.join("، ") : q.a) || "";
     h+='<textarea class="essay-ta" placeholder="جاۋابىڭىزنى تەپسىلىي بايان قىلىپ يېزىڭ…"></textarea>';
-    h+='<div class="model-ans" id="model_'+key+'" style="display:none;background:#e8f4f1;border:1.5px solid #0e7c6f;border-radius:10px;padding:.85rem 1rem;margin-top:.7rem;line-height:1.8;color:#0a5c52"></div>';
+    if(!isTakingExam){
+      h+='<div style="margin-top:.6rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">'
+        +'  <button class="btn btn-line btn-sm" data-model="'+key+'" type="button" style="font-size:.85rem;cursor:pointer;padding:.4rem .85rem;border-radius:8px;display:inline-flex;align-items:center;gap:.3rem">📖 توغرا ئۈلگە جاۋابنى كۆرۈش</button>'
+        +'</div>';
+    }
+    h+='<div class="model" id="model_'+key+'" style="display:none">'
+      +'  <div style="font-weight:bold;color:#047857;margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem"><span>✅</span> <b>توغرا ئۈلگە جاۋاب:</b></div>'
+      +'  <div class="model-body" style="background:#fff;border-radius:8px;padding:.7rem .9rem;border:1px solid #a7f3d0;color:#1f2937">' + (modelAns || 'بۇ سوئالنىڭ ئۈلگە جاۋابى تېخى بېكىتىلمىگەن.') + '</div>'
+      +'</div>';
   }
-  if(q.exp) h+='<div class="exp">💡 <b>چۈشەندۈرۈش:</b> '+esc(q.exp)+'</div>';
-  else if(q.type==="blank"||q.type==="match") h+='<div class="exp">💡 جاۋابنى تەكشۈرۈپ كۆرۈڭ.</div>';
+  var expContent = "";
+  if(q.exp) expContent = '💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp);
+  else if(q.type==="blank"||q.type==="match") expContent = '💡 جاۋابنى تەكشۈرۈپ كۆرۈڭ.';
+  else if(q.type==="choice") expContent = '💡 <b>توغرا جاۋاب:</b> ' + esc(q.opts ? q.opts[q.a] : q.a);
+  else if(q.type==="tf") expContent = '💡 <b>توغرا جاۋاب:</b> ' + (q.a ? "✅ توغرا" : "❌ خاتا");
+  h+='<div class="exp">' + expContent + '</div>';
   h+='</div>';
   return h;
 }
@@ -1094,10 +1112,13 @@ function checkQuestion(q, key){
       if(v===correct){ 
         res.score=1; 
         box.classList.add("correct"); 
+        if(exp){
+          exp.innerHTML = '✅ <b>توغرا تاپتىڭىز!</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+        }
       } else { 
         box.classList.add("wrong"); 
         if(exp){
-          exp.innerHTML = '❌ <b>خاتا جاۋاب.</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+          exp.innerHTML = '❌ <b>خاتا جاۋاب!</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
         }
       }
       box.querySelectorAll("label").forEach(function(lb){
@@ -1109,7 +1130,7 @@ function checkQuestion(q, key){
       var cl=box.querySelector('label[data-i="'+correct+'"]'); 
       if(cl) cl.classList.add("opt-ok"); 
       if(exp){
-        exp.innerHTML = '⚠️ <b>بوش قالدۇرۇلدى.</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+        exp.innerHTML = '⚠️ <b>بوش قالدۇرۇلدى!</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
       }
     }
   } else if(q.type==="blank"){
@@ -1126,7 +1147,14 @@ function checkQuestion(q, key){
     res.score = inps.length? ok/inps.length : 0;
     box.classList.add(ok===inps.length?"correct":"wrong");
     var exp=box.querySelector(".exp");
-    if(exp && ok!==inps.length){ var ca=q.a.map(function(a){return Array.isArray(a)?a[0]:a;}).join("، "); exp.innerHTML="💡 <b>توغرا جاۋاب:</b> "+esc(ca)+(q.exp?("<br>📝 "+esc(q.exp)):""); }
+    var ca=q.a.map(function(a){return Array.isArray(a)?a[0]:a;}).join("، ");
+    if(exp){
+      if(ok===inps.length){
+        exp.innerHTML="✅ <b>توغرا تولدۇردىڭىز!</b> توغرا جاۋاب: "+esc(ca)+(q.exp?("<br>📝 "+esc(q.exp)):"");
+      } else {
+        exp.innerHTML="❌ <b>خاتا ياكى كەم!</b> توغرا جاۋاب: <b style=\"color:var(--teal)\">"+esc(ca)+"</b>"+(q.exp?("<br>📝 "+esc(q.exp)):"");
+      }
+    }
   } else if(q.type==="match"){
     var rows=box.querySelectorAll(".mrow"), okm=0;
     rows.forEach(function(r){
@@ -1140,15 +1168,20 @@ function checkQuestion(q, key){
     res.score = rows.length? okm/rows.length : 0;
     box.classList.add(okm===rows.length?"correct":"wrong");
     var exp=box.querySelector(".exp");
-    if(exp && okm!==rows.length){
+    if(exp){
       var matchPairs = q.pairs.map(function(p){ return '• <b>' + esc(p[0]) + '</b> ➔ ' + esc(p[1]); }).join('<br>');
-      exp.innerHTML = '💡 <b>توغرا تۇتاشتۇرۇش:</b><br>' + matchPairs + (q.exp ? ('<br>📝 ' + esc(q.exp)) : '');
+      if(okm===rows.length){
+        exp.innerHTML = '✅ <b>توغرا تۇتاشتۇردىڭىز!</b><br>' + matchPairs + (q.exp ? ('<br>📝 ' + esc(q.exp)) : '');
+      } else {
+        exp.innerHTML = '❌ <b>خاتا تۇتاشتۇرۇلدى!</b> توغرا تۇتاشتۇرۇش:<br>' + matchPairs + (q.exp ? ('<br>📝 ' + esc(q.exp)) : '');
+      }
     }
   } else if(q.type==="essay"){
     res.max = 1;
     var ta = box.querySelector("textarea");
     var val = ta ? norm(ta.value) : "";
-    var mBox = box.querySelector(".model-ans");
+    var mBox = $("model_" + key) || box.querySelector(".model");
+    var mBtn = box.querySelector("[data-model]");
     var correctAns = q.model || q.exp || (Array.isArray(q.a) ? q.a.join("، ") : q.a) || "";
 
     if(val.length >= 6){
@@ -1158,10 +1191,11 @@ function checkQuestion(q, key){
       box.classList.add("correct");
       if(mBox){
         mBox.style.display = "block";
-        mBox.style.background = "#e8f4f1";
-        mBox.style.borderColor = "#0e7c6f";
-        mBox.style.color = "#0a5c52";
-        mBox.innerHTML = '<div style="color:#0a5c52;font-weight:bold;margin-bottom:4px">✅ جاۋابىڭىز قوبۇل قىلىندى!</div><b style="color:#0a5c52">📖 پايدىلىنىش ئۈلگە جاۋابى:</b><br>' + correctAns;
+        mBox.classList.add("show");
+        mBox.classList.remove("model-wrong");
+        mBox.innerHTML = '<div style="color:#047857;font-weight:bold;margin-bottom:6px;display:flex;align-items:center;gap:.3rem"><span>✅</span> <b>جاۋابىڭىز قوبۇل قىلىندى!</b></div>'
+          + '<div class="model-body" style="background:#fff;border-radius:8px;padding:.7rem .9rem;border:1px solid #6ee7b7;color:#065f46"><b style="color:#047857">📖 پايدىلىنىش ئۈلگە جاۋابى:</b><br>' + correctAns + '</div>';
+        if(mBtn) mBtn.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
       }
     } else {
       res.score = 0;
@@ -1170,10 +1204,11 @@ function checkQuestion(q, key){
       box.classList.add("wrong");
       if(mBox){
         mBox.style.display = "block";
-        mBox.style.background = "#fef2f2";
-        mBox.style.borderColor = "#ef4444";
-        mBox.style.color = "#991b1b";
-        mBox.innerHTML = '<div style="color:#b91c1c;font-weight:bold;margin-bottom:4px">❌ جاۋابىڭىز خاتا ياكى تولۇق ئەمەس!</div><b style="color:#0a5c52">✅ توغرا ئۈلگە جاۋاب:</b><br>' + correctAns;
+        mBox.classList.add("show");
+        mBox.classList.add("model-wrong");
+        mBox.innerHTML = '<div style="color:#b91c1c;font-weight:bold;margin-bottom:6px;display:flex;align-items:center;gap:.3rem"><span>❌</span> <b>جاۋابىڭىز خاتا ياكى تولۇق ئەمەس!</b></div>'
+          + '<div class="model-body" style="background:#fff;border-radius:8px;padding:.7rem .9rem;border:1px solid #fca5a5;color:#1f2937"><b style="color:#047857">✅ توغرا ئۈلگە جاۋاب:</b><br>' + correctAns + '</div>';
+        if(mBtn) mBtn.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
       }
     }
   }
@@ -1182,6 +1217,23 @@ function checkQuestion(q, key){
 function bindQuiz(box, L, isExam){
   box.querySelectorAll(".chip").forEach(function(c){
     c.onclick=function(){ quizFilter=c.getAttribute("data-f"); renderTabBody(L); };
+  });
+  box.querySelectorAll("[data-model]").forEach(function(b){
+    b.onclick=function(e){
+      e.preventDefault();
+      var m = $("model_" + b.getAttribute("data-model"));
+      if(!m) return;
+      var isShown = (m.style.display === "block" || m.classList.contains("show"));
+      if(isShown){
+        m.style.display = "none";
+        m.classList.remove("show");
+        b.textContent = "📖 توغرا ئۈلگە جاۋابنى كۆرۈش";
+      } else {
+        m.style.display = "block";
+        m.classList.add("show");
+        b.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
+      }
+    };
   });
   if(isExam) return;
   $("btnCheck").onclick=function(){
@@ -1495,6 +1547,7 @@ function submitExam(auto){
 
     if(q.type==="choice"||q.type==="tf"){
       var correct=q.type==="choice"?q.a:(q.a?1:0);
+      var correctText = q.type==="choice" ? (q.opts ? q.opts[correct] : "") : (q.a ? "توغرا" : "خاتا");
       if(ur.ans !== null && ur.ans !== undefined){
         var selRadio=box.querySelector('input[name="r_rv_'+i+'"][value="'+ur.ans+'"]');
         if(selRadio) selRadio.checked = true;
@@ -1504,6 +1557,15 @@ function submitExam(auto){
         if(lval===correct) lb.classList.add("opt-ok");
         if(ur.ans !== null && ur.ans !== undefined && lval===ur.ans && lval!==correct) lb.classList.add("opt-bad");
       });
+      var exp=box.querySelector(".exp");
+      if(exp){
+        exp.style.display = "block";
+        if(isPass){
+          exp.innerHTML = '✅ <b>توغرا تاپتىڭىز!</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+        } else {
+          exp.innerHTML = '❌ <b>خاتا تاپتىڭىز!</b> توغرا جاۋاب: <b style="color:var(--teal)">' + esc(correctText) + '</b>' + (q.exp ? ('<br>💡 <b>چۈشەندۈرۈش:</b> ' + esc(q.exp)) : '');
+        }
+      }
     } else if(q.type==="blank"){
       var inps=box.querySelectorAll(".blank-inp");
       if(Array.isArray(ur.ans)){
@@ -1516,7 +1578,11 @@ function submitExam(auto){
         });
       }
       var exp=box.querySelector(".exp");
-      if(exp){ var ca=q.a.map(function(a){return Array.isArray(a)?a[0]:a;}).join("، "); exp.innerHTML="💡 <b>توغرا جاۋاب:</b> "+esc(ca)+(q.exp?("<br>📝 "+esc(q.exp)):""); }
+      if(exp){ 
+        exp.style.display = "block";
+        var ca=q.a.map(function(a){return Array.isArray(a)?a[0]:a;}).join("، "); 
+        exp.innerHTML = (isPass ? "✅ <b>توغرا تولدۇردىڭىز!</b> " : "❌ <b>خاتا تولدۇرۇلدى!</b> ") + "توغرا جاۋاب: <b style=\"color:var(--teal)\">"+esc(ca)+"</b>"+(q.exp?("<br>📝 "+esc(q.exp)):""); 
+      }
     } else if(q.type==="match"){
       var rows=box.querySelectorAll(".mrow");
       if(Array.isArray(ur.ans)){
@@ -1533,11 +1599,24 @@ function submitExam(auto){
           }
         });
       }
+      var exp=box.querySelector(".exp");
+      if(exp){
+        exp.style.display = "block";
+        var matchPairs = q.pairs.map(function(p){ return '• <b>' + esc(p[0]) + '</b> ➔ ' + esc(p[1]); }).join('<br>');
+        exp.innerHTML = (isPass ? "✅ <b>توغرا تۇتاشتۇردىڭىز!</b><br>" : "❌ <b>خاتا تۇتاشتۇرۇلدى!</b> توغرا تۇتاشتۇرۇش:<br>") + matchPairs + (q.exp ? ('<br>📝 ' + esc(q.exp)) : '');
+      }
     } else if(q.type==="essay"){
       var ta=box.querySelector("textarea");
       if(ta && ur.ans !== null && ur.ans !== undefined) ta.value = ur.ans;
       var md=box.querySelector(".model");
-      if(md) md.classList.add("show");
+      var btnM = box.querySelector("[data-model]");
+      if(md){
+        md.style.display = "block";
+        md.classList.add("show");
+        var cAns = q.model || q.exp || (Array.isArray(q.a) ? q.a.join("، ") : q.a) || "";
+        md.innerHTML = '<div style="font-weight:bold;color:#047857;margin-bottom:4px">✅ توغرا ئۈلگە جاۋاب:</div><div class="model-body" style="background:#fff;border-radius:8px;padding:.7rem .9rem;border:1px solid #10b981;color:#1f2937">' + cAns + '</div>';
+      }
+      if(btnM) btnM.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
     }
     box.querySelectorAll("input,select,textarea,button").forEach(function(el){ el.disabled=true; });
   });
@@ -2713,6 +2792,25 @@ function bindTabs(){
 }
 function stopTimer(){ if(timerInt){clearInterval(timerInt);timerInt=null;} }
 window.addEventListener("hashchange", router);
+document.addEventListener("click", function(e){
+  var btn = e.target.closest("[data-model]");
+  if(btn){
+    e.preventDefault();
+    var key = btn.getAttribute("data-model");
+    var m = $("model_" + key);
+    if(!m) return;
+    var isShown = (m.style.display === "block" || m.classList.contains("show"));
+    if(isShown){
+      m.style.display = "none";
+      m.classList.remove("show");
+      btn.textContent = "📖 توغرا ئۈلگە جاۋابنى كۆرۈش";
+    } else {
+      m.style.display = "block";
+      m.classList.add("show");
+      btn.textContent = "📕 ئۈلگە جاۋابنى يوشۇرۇش";
+    }
+  }
+});
 document.addEventListener("DOMContentLoaded", function(){
   initTheme(); initViewMode();  bindRegBtn(); loadCustomData(); renderNav(); router();
   var phb = $("pwaHeaderBtn");
@@ -3959,6 +4057,8 @@ TEACHERS = [
  tag:"دەرسلىك ئاپتورى"}
 ];
 
+
+if(!window.DEFAULT_LESSONS || !window.DEFAULT_LESSONS.length){
 
 /* ===== 1-دەرس ===== */
 LESSONS.push({
@@ -5382,6 +5482,7 @@ quiz: [
 {type:"essay", q:"دورىلارنىڭ 6 خىل تەبىئىتىنى مىساللىرى بىلەن يېزىڭ.", model:"<b>ئىسسىق:</b> زەنجىۋىل، قارىمۇچ؛ <b>سوغۇق:</b> يۇمغاقسۈت، لىمون؛ <b>قۇرۇق-ئىسسىق:</b> ئاقىرقەرھا، قەلەمپۇر؛ <b>ھۆل-ئىسسىق:</b> تاتلىق بادام، رەيھان؛ <b>ھۆل-سوغۇق:</b> شاپتۇل، بېھى؛ <b>قۇرۇق-سوغۇق:</b> ئاچچىق ئانار، يېشىل چاي."}
 ]
 });
+}
 
 </script>
 

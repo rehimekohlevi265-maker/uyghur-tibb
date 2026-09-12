@@ -1,6 +1,7 @@
-const CACHE_NAME = 'uytibb-v67-20260912_no_ai_essay_model_exams_no_view_btn';
+const CACHE_NAME = 'uytibb-v68-20260912_model_ans_fix_and_full_quiz';
 const ASSETS = [
   './',
+  './data.js',
   './index.html',
   './admin.html',
   './books.html',
