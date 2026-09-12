@@ -114,6 +114,38 @@ module.exports = async (req, res) => {
 
       // 3. Log exam
       if (data.action === 'exam' && data.exam) {
+        // Try to persist to exam_logs if table is accessible
+        sbFetch('/rest/v1/exam_logs', {
+          method: 'POST',
+          body: {
+            student_phone: data.exam.phone || '',
+            scope: data.exam.scope || 'ئومۇمىي',
+            score: data.exam.pct != null ? data.exam.pct : 0,
+            total_questions: data.exam.count != null ? data.exam.count : 0,
+            passed: (data.exam.pct != null ? data.exam.pct : 0) >= 60
+          }
+        }).catch(() => {});
+
+        // Also persist to student's record notes in Supabase as a reliable fallback
+        if (data.exam.phone) {
+          sbFetch(`/rest/v1/students?phone=eq.${encodeURIComponent(data.exam.phone)}`, {
+            method: 'PATCH',
+            body: {
+              last_active: new Date().toISOString(),
+              notes: JSON.stringify({
+                last_exam: {
+                  name: data.exam.name,
+                  phone: data.exam.phone,
+                  when: data.exam.when || new Date().toISOString().slice(0, 16).replace('T', ' '),
+                  scope: data.exam.scope || 'ئومۇمىي سىناق',
+                  count: data.exam.count || 0,
+                  pct: data.exam.pct != null ? data.exam.pct : 0
+                }
+              })
+            }
+          }).catch(() => {});
+        }
+
         inMemoryExams.unshift(data.exam);
         return res.status(200).json({ status: 'ok', message: 'Exam result logged' });
       }
@@ -160,10 +192,45 @@ module.exports = async (req, res) => {
       if (reg && reg < LAUNCH_CUTOFF) return false;
       return true;
     });
+
+    // Reconstruct exams from live students notes as well as inMemoryExams and exam_logs
+    let allExams = inMemoryExams.slice();
+    (list || []).forEach(s => {
+      if (s.notes) {
+        try {
+          const parsed = JSON.parse(s.notes);
+          if (parsed && parsed.last_exam) {
+            const le = parsed.last_exam;
+            if (!allExams.some(e => e.phone === le.phone && e.when === le.when)) {
+              allExams.push(le);
+            }
+          }
+        } catch(e) {}
+      }
+    });
+
+    let sbExams = await sbFetch('/rest/v1/exam_logs?select=*&order=taken_at.desc&limit=100');
+    if (Array.isArray(sbExams) && sbExams.length) {
+      sbExams.forEach(se => {
+        const student = (list || []).find(s => s.phone === se.student_phone);
+        const ex = {
+          name: student ? student.name : 'ئوقۇغۇچى',
+          phone: se.student_phone || '',
+          when: se.taken_at ? se.taken_at.slice(0, 16).replace('T', ' ') : '',
+          scope: se.scope || 'ئومۇمىي سىناق',
+          count: se.total_questions || 0,
+          pct: se.score || 0
+        };
+        if (!allExams.some(e => e.phone === ex.phone && e.when === ex.when)) {
+          allExams.push(ex);
+        }
+      });
+    }
+
     return res.status(200).json({
       status: 'ok',
       students: list,
-      exams: inMemoryExams,
+      exams: allExams,
       feedback: inMemoryFeedback,
       supabaseConnected: true,
       serverTime: new Date().toISOString()

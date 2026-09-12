@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS public.exam_logs (
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exam_logs ENABLE ROW LEVEL SECURITY;
 
 -- ھەممە ئادەم ئوقۇيالايدىغان ۋە سوئال يوللىيالايدىغان قائىدە
 CREATE POLICY "Public Read Lessons" ON public.lessons FOR SELECT USING (true);
@@ -80,6 +81,9 @@ CREATE POLICY "Public Insert Student" ON public.students FOR INSERT WITH CHECK (
 CREATE POLICY "Public Read Students Status" ON public.students FOR SELECT USING (true);
 CREATE POLICY "Public Update Student" ON public.students FOR UPDATE USING (true);
 CREATE POLICY "Public Delete Student" ON public.students FOR DELETE USING (true);
+CREATE POLICY "Public Read Exam Logs" ON public.exam_logs FOR SELECT USING (true);
+CREATE POLICY "Public Insert Exam Logs" ON public.exam_logs FOR INSERT WITH CHECK (true);
 
 COMMENT ON TABLE public.students IS 'ئۇيغۇر تېبابىتى تىزىملاتقان ئوقۇغۇچىلار ۋە تەستىقلاش ھالىتى';
 COMMENT ON TABLE public.feedback IS 'ئوقۇغۇچىلارنىڭ سوئال-جاۋاب ۋە پىكىرلىرى';
+COMMENT ON TABLE public.exam_logs IS 'ئوقۇغۇچىلارنىڭ ئىمتىھان تاپشۇرۇش نەتىجىلىرى';

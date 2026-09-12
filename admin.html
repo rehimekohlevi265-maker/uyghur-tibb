@@ -976,12 +976,13 @@ table.data-table tr:hover { background: var(--teal-light); }
           <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">
             بارلىق كىرگۈزگەن دەرسلىكلىرىڭىز، سوئال ئامبىرى ۋە ئۇستازلارنى بىر كۇنۇپكا بىلەن كومپىيوتېرىڭىزغا چۈشۈرۈۋالالايسىز ياكى قايتا ئەكىرەلەيسىز.
           </p>
-          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
             <button class="btn btn-teal" id="backupJsonBtn">📥 پۈتۈن دەرس ۋە سوئاللارنى JSON قىلىپ ساقلاش</button>
             <label class="btn btn-line" style="margin:0;cursor:pointer">
               📂 JSON دىن ئەسلىگە كەلتۈرۈش
               <input type="file" id="restoreJsonInput" accept=".json" style="display:none">
             </label>
+            <button class="btn btn-line" id="resetDefaultsBtn" style="color:var(--red);border-color:var(--red)">⚠️ دەرسلەرنى ئەسلى ھالىتىگە قايتۇرۇش</button>
           </div>
         </div>
 
@@ -3724,14 +3725,17 @@ document.getElementById("restoreJsonInput").onchange = function(e){
   reader.readAsText(f);
 };
 
-document.getElementById("resetDefaultsBtn").onclick = function(){
-  if(confirm("ھەقىقەتەن بارلىق ئۆزگەرتىشلەرنى ئۆچۈرۈپ ئەسلىدىكى ھالەتكە قايتۇرامسىز؟")){
-    localStorage.removeItem("uytibb_custom_lessons");
-    localStorage.removeItem("uytibb_custom_teachers");
-    initAdmin();
-    showToast("⚠️ ئەسلى زاۋۇت ھالىتىگە قايتۇرۇلدى.");
-  }
-};
+var _rdb = document.getElementById("resetDefaultsBtn");
+if(_rdb){
+  _rdb.onclick = function(){
+    if(confirm("ھەقىقەتەن بارلىق ئۆزگەرتىشلەرنى ئۆچۈرۈپ ئەسلىدىكى ھالەتكە قايتۇرامسىز؟")){
+      localStorage.removeItem("uytibb_custom_lessons");
+      localStorage.removeItem("uytibb_custom_teachers");
+      initAdmin();
+      showToast("⚠️ ئەسلى زاۋۇت ھالىتىگە قايتۇرۇلدى.");
+    }
+  };
+}
 
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
