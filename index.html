@@ -49,14 +49,14 @@ if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) {
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v69")){
+      if(!k.includes("v70")){
         caches.delete(k);
       }
     });
   });
 }
 try {
-  var _lrk = "uytibb_launch_reset_v68";
+  var _lrk = "uytibb_launch_reset_v70";
   if (!localStorage.getItem(_lrk)) {
     localStorage.removeItem("uytibb_custom_lessons");
     localStorage.removeItem("uytibb_app_ver");
@@ -66,8 +66,12 @@ try {
     var _cp = JSON.parse(localStorage.getItem("uytibb_v1")||"{}");
     if (_cp) {
       if (_cp.user) {
-        if (['99900011122', '5516862398', '5016862393', '5516862393', '5559880508', '5315942989', '13800000000'].includes(_cp.user.phone)) {
+        var _unm = (_cp.user.name || '').trim().toLowerCase();
+        var _uph = String(_cp.user.phone || '').trim();
+        if (['99900011122', '5516862398', '5016862393', '5516862393', '5559880508', '5315942989', '13800000000'].includes(_uph) || _unm.indexOf('رەھىمە') >= 0 || _unm.indexOf('rehime') >= 0) {
           delete _cp.user;
+          _cp.exams = [];
+          _cp.wrong = [];
         } else {
           _cp.user.status = "approved";
           _cp.user.approvalNotified = true;
@@ -692,7 +696,7 @@ function forceAppUpdate(){
 
 (function autoRepairLessonsCache(){
   try {
-    var CURRENT_VER = "v69_20260912_fix_toggle_model_answer";
+    var CURRENT_VER = "v70_20260912_exams_stats_and_clean";
     var savedVer = localStorage.getItem("uytibb_app_ver");
     if(savedVer !== CURRENT_VER){
       localStorage.removeItem("uytibb_custom_lessons");

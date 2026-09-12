@@ -43,7 +43,7 @@ if("serviceWorker" in navigator && /^https?:/.test(location.protocol)){
 if ("caches" in window) {
   caches.keys().then(function(keys){
     keys.forEach(function(k){
-      if(!k.includes("v69")){
+      if(!k.includes("v70")){
         caches.delete(k);
       }
     });
@@ -580,6 +580,7 @@ table.data-table tr:hover { background: var(--teal-light); }
       <button class="nav-item" data-tab="quiz"><span class="icon">✍️</span> سوئال ئامبىرى</button>
       <button class="nav-item" data-tab="teachers"><span class="icon">👨‍🏫</span> ئۇستازلار قامۇسى</button>
       <button class="nav-item" data-tab="students"><span class="icon">👥</span> ئوقۇغۇچىلار ۋە تەستىقلاش <span id="pendingBadgeSide" class="badge badge-gold" style="display:none;margin-right:.4rem">0</span></button>
+      <button class="nav-item" data-tab="exams"><span class="icon">📝</span> تاپشۇرۇلغان ئىمتىھانلار <span id="examsBadgeSide" class="badge badge-green" style="display:none;margin-right:.4rem">0</span></button>
       <button class="nav-item" data-tab="feedback"><span class="icon">💬</span> سوئال-جاۋاب ۋە پىكىرلەر <span id="feedbackBadgeSide" class="badge badge-gold" style="display:none;margin-right:.4rem">0</span></button>
       <button class="nav-item" data-tab="settings"><span class="icon">⚙️</span> سىستېما ۋە باشقۇرغۇچىلار</button>
       <button class="nav-item" type="button" onclick="directAdminInstall()" style="margin-top:auto;color:var(--gold);border-top:1px dashed var(--line);padding-top:.8rem"><span class="icon">📲</span> بىۋاستە چۈشۈرۈش</button>
@@ -611,7 +612,11 @@ table.data-table tr:hover { background: var(--teal-light); }
             <div class="stat-icon" style="background:#fff4d9;color:#b28302">📄</div>
             <div class="stat-data"><b id="stPdfs">11</b><span>PDF كىتاب بار دەرسلەر</span></div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" style="cursor:pointer" onclick="switchTab('exams')">
+            <div class="stat-icon" style="background:#e6f4ea;color:#137333">📝</div>
+            <div class="stat-data"><b id="stExams">0</b><span>تاپشۇرۇلغان ئىمتىھانلار</span></div>
+          </div>
+          <div class="stat-card" style="cursor:pointer" onclick="switchTab('feedback')">
             <div class="stat-icon" style="background:#fce8e6;color:#c5221f">💬</div>
             <div class="stat-data"><b id="stFeedbackCount">0</b><span>كەلگەن سوئاللار</span></div>
           </div>
@@ -623,8 +628,9 @@ table.data-table tr:hover { background: var(--teal-light); }
             <button class="btn btn-gold" onclick="directAdminInstall()" style="font-weight:bold;color:#2e2200">📲 باشقۇرۇش ئەپىنى بىۋاستە قاچىلاش (PWA)</button>
           </div>
           <div style="display:flex;gap:.8rem;flex-wrap:wrap">
-            <button class="btn btn-teal" onclick="switchTab('pdfbooks')">📖 PDF كۇتۇپخانىسىنى باشقۇرۇش</button>
+            <button class="btn btn-teal" onclick="switchTab('exams')">📝 تاپشۇرۇلغان ئىمتىھانلار ستاتىستىكىسى</button>
             <button class="btn btn-gold" onclick="switchTab('students')">👥 كىرىش تەستىقلاش مەركىزى</button>
+            <button class="btn btn-teal" onclick="switchTab('pdfbooks')">📖 PDF كۇتۇپخانىسىنى باشقۇرۇش</button>
             <button class="btn btn-line" onclick="switchTab('feedback')">💬 سوئال-جاۋابقا جاۋاب قايتۇرۇش</button>
             <button class="btn btn-line" onclick="openAddQuestionModal()">➕ يېڭى سىناق سوئالى قوشۇش</button>
           </div>
@@ -865,6 +871,71 @@ table.data-table tr:hover { background: var(--teal-light); }
               </thead>
               <tbody id="examsTableBody">
                 <tr><td colspan="7" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SUBMITTED EXAMS & STATS -->
+      <section class="panel" id="p-exams">
+        <div class="panel-title">
+          <span>📝 تاپشۇرۇلغان ئىمتىھانلار ستاتىستىكىسى ۋە نەتىجىلەر تەھلىلى</span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-teal btn-sm" onclick="loadStudentData(); showToast('🔄 سانلىق مەلۇماتلار يېڭىلاندى');">🔄 نەتىجىلەرنى يېڭىلاش</button>
+            <button class="btn btn-line btn-sm" onclick="clearAllExamsData()" style="color:var(--red);border-color:var(--red)">🗑️ بارلىق نەتىجىلەرنى نۆللەش</button>
+          </div>
+        </div>
+
+        <!-- Exam Stat Cards -->
+        <div class="stat-grid" style="margin-bottom:1.2rem">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e8f0fe;color:#1a73e8">📝</div>
+            <div class="stat-data"><b id="exStatTotal">0</b><span>جەمئىي ئىمتىھان</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#e6f4ea;color:#137333">✅</div>
+            <div class="stat-data"><b id="exStatPassed">0</b><span id="exStatPassRate">ئۆتۈش نىسبىتى %0</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fff4d9;color:#b28302">🎯</div>
+            <div class="stat-data"><b id="exStatAvg">%0</b><span>ئوتتۇرىچە نەتىجە</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fce8e6;color:#c5221f">🏆</div>
+            <div class="stat-data"><b id="exStatTop">0</b><span>ئەلاچىلار (%90+)</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.8rem">
+            <div style="display:flex;align-items:center;gap:.6rem;flex:1;min-width:260px">
+              <input type="text" id="searchExamsInput" oninput="filterExamsTable()" placeholder="🔍 ئوقۇغۇچى ئىسمى ياكى تېلېفونى بويىچە ئىزدەش..." class="inp" style="max-width:360px">
+              <select id="filterExamStatus" onchange="filterExamsTable()" class="inp" style="width:auto">
+                <option value="all">ھەممە ھالەت</option>
+                <option value="pass">ئۆتكەنلەر (>=%60)</option>
+                <option value="fail">قايتا سىنايدىغانلار (<%60)</option>
+              </select>
+            </div>
+            <span id="examCountDisplay" style="color:var(--muted);font-size:.9rem">0 خاتىرە</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ئوقۇغۇچى نامى</th>
+                  <th>تېلېفون نومۇرى</th>
+                  <th>تاپشۇرغان ۋاقتى</th>
+                  <th>سىناق دائىرىسى</th>
+                  <th>سوئال سانى</th>
+                  <th>ئېرىشكەن نومۇرى</th>
+                  <th>نەتىجىسى</th>
+                  <th style="text-align:center">مەشغۇلات</th>
+                </tr>
+              </thead>
+              <tbody id="dedicatedExamsTableBody">
+                <tr><td colspan="8" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان تاپشۇرۇش خاتىرىسى يوق.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1239,11 +1310,51 @@ table.data-table tr:hover { background: var(--teal-light); }
 <script src="supabase.js"></script>
 <script>
 try {
-  var _lrk = "uytibb_launch_reset_v64";
+  var _lrk = "uytibb_launch_reset_v70";
   if (!localStorage.getItem(_lrk)) {
-    localStorage.removeItem("uytibb_all_students");
-    localStorage.removeItem("uytibb_deleted_phones");
-    localStorage.removeItem("uytibb_deleted_names");
+    var delP = JSON.parse(localStorage.getItem("uytibb_deleted_phones")||"[]");
+    ['5516862398', '5516862393'].forEach(function(p){ if(!delP.includes(p)) delP.push(p); });
+    localStorage.setItem("uytibb_deleted_phones", JSON.stringify(delP));
+
+    var delN = JSON.parse(localStorage.getItem("uytibb_deleted_names")||"[]");
+    ['رەھىمە', 'rehime'].forEach(function(n){ if(!delN.includes(n)) delN.push(n); });
+    localStorage.setItem("uytibb_deleted_names", JSON.stringify(delN));
+
+    var rawSt = localStorage.getItem("uytibb_all_students");
+    if(rawSt){
+      var list = JSON.parse(rawSt);
+      if(Array.isArray(list)){
+        list = list.filter(function(s){
+          var nm = (s.name||"").trim().toLowerCase();
+          var ph = String(s.phone||"").trim();
+          return nm !== "رەھىمە" && nm !== "rehime" && ph !== "5516862398" && ph !== "5516862393";
+        });
+        localStorage.setItem("uytibb_all_students", JSON.stringify(list));
+      }
+    }
+
+    var rawEx = localStorage.getItem("uytibb_all_exams");
+    if(rawEx){
+      var elist = JSON.parse(rawEx);
+      if(Array.isArray(elist)){
+        elist = elist.filter(function(e){
+          var nm = (e.name||"").trim().toLowerCase();
+          var ph = String(e.phone||"").trim();
+          return nm !== "رەھىمە" && nm !== "rehime" && ph !== "5516862398" && ph !== "5516862393";
+        });
+        localStorage.setItem("uytibb_all_exams", JSON.stringify(elist));
+      }
+    }
+
+    var rawProg = localStorage.getItem("uytibb_v1");
+    if(rawProg){
+      var prog = JSON.parse(rawProg);
+      if(prog.user && (prog.user.name === "رەھىمە" || prog.user.phone === "5516862398" || prog.user.phone === "5516862393")){
+        delete prog.user;
+        prog.exams = [];
+        localStorage.setItem("uytibb_v1", JSON.stringify(prog));
+      }
+    }
     localStorage.setItem(_lrk, "1");
   }
 } catch(e){}
@@ -2052,6 +2163,7 @@ function switchTab(tabId){
   });
   if(tabId === "feedback") renderFeedbackTable();
   if(tabId === "students") loadStudentData();
+  if(tabId === "exams") loadStudentData();
   if(tabId === "settings"){ renderAdminsTable(); initPasswordChangeUI(); }
   if(tabId === "pdfbooks") renderAdminPdfBooksTable();
 }
@@ -3140,6 +3252,7 @@ function unmarkNameDeleted(name){
 }
 
 var EXCLUDED_TEST_PHONES = ['5551234567', '99900011122', '5516862398', '5016862393', '5516862393', '5559880508', '5315942989', '13800000000', 'admin'];
+var EXCLUDED_NAMES = ['رەھىمە', 'rehime', 'سىناق ئوقۇغۇچى', 'سىناق'];
 
 function clearAllStudentsData(){
   if(!confirm("⚠️ راستلا بارلىق ئوقۇغۇچىلار ئۇچۇرىنى نۆللەپ پاكىزلامسىز؟ سىستېما تامامەن يېڭىدىن باشلىنىدۇ.")) return;
@@ -3169,8 +3282,8 @@ function renderStudentsTableOnly(){
     allSt = allSt.filter(function(st){
       var nm = (st.name || "").trim();
       var p = String(st.phone||"").trim();
-      if(nm === "سىناق ئوقۇغۇچى" || nm === "سىناق" || nm.startsWith("سىناق")) return false;
-      if(EXCLUDED_TEST_PHONES.includes(p)) return false;
+      if(nm === "سىناق ئوقۇغۇچى" || nm === "سىناق" || nm.startsWith("سىناق") || nm.toLowerCase() === "رەھىمە" || nm.toLowerCase() === "rehime" || EXCLUDED_NAMES.includes(nm)) return false;
+      if(p === "5516862398" || p === "5516862393" || EXCLUDED_TEST_PHONES.includes(p)) return false;
       if(p && p !== "undefined" && deletedP.includes(p)) return false;
       if(nm && nm !== "undefined" && deletedN.includes(nm)) return false;
       return true;
@@ -3255,7 +3368,8 @@ function loadStudentData(){
           d.students.forEach(function(s){
             var sPhone = String(s.phone||"").trim();
             var sName = String(s.name||"").trim();
-            if(EXCLUDED_TEST_PHONES.includes(sPhone)) return;
+            if(EXCLUDED_TEST_PHONES.includes(sPhone) || sPhone === "5516862398" || sPhone === "5516862393") return;
+            if(sName.toLowerCase() === "رەھىمە" || sName.toLowerCase() === "rehime" || EXCLUDED_NAMES.includes(sName)) return;
             if(sPhone && curDelP.includes(sPhone)) return;
             if(sName && curDelN.includes(sName)) return;
             var ex = curSt.find(function(x){ return (sPhone && String(x.phone||"").trim() === sPhone); });
@@ -3294,7 +3408,8 @@ function loadStudentData(){
           sbStudents.forEach(function(s){
             var sPhone = String(s.phone||"").trim();
             var sName = String(s.name||"").trim();
-            if(EXCLUDED_TEST_PHONES.includes(sPhone)) return;
+            if(EXCLUDED_TEST_PHONES.includes(sPhone) || sPhone === "5516862398" || sPhone === "5516862393") return;
+            if(sName.toLowerCase() === "رەھىمە" || sName.toLowerCase() === "rehime" || EXCLUDED_NAMES.includes(sName)) return;
             if(sPhone && curDelP.includes(sPhone)) return;
             if(sName && curDelN.includes(sName)) return;
             var ex = curSt.find(function(x){ return (sPhone && String(x.phone||"").trim() === sPhone) || (sName && String(x.name||"").trim() === sName); });
@@ -3330,9 +3445,13 @@ function loadStudentData(){
   } catch(e){ console.error("loadStudentData error:", e); }
 }
 
+var _currentExamsList = [];
+
 function renderExamsTable(examsList){
   var tbodyEx = document.getElementById("examsTableBody");
-  if(!tbodyEx) return;
+  var tbodyDedicated = document.getElementById("dedicatedExamsTableBody");
+  if(!tbodyEx && !tbodyDedicated) return;
+
   var allEx = examsList;
   if(!Array.isArray(allEx)){
     var curAllEx = JSON.parse(localStorage.getItem("uytibb_all_exams")||"[]");
@@ -3345,27 +3464,183 @@ function renderExamsTable(examsList){
       }
     });
   }
-  if(!allEx.length){
-    tbodyEx.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>';
+
+  // Filter out any excluded users (including Rehime and test phones)
+  var delP = getDeletedPhones();
+  var delN = getDeletedNames();
+  allEx = (allEx || []).filter(function(ex){
+    var sName = String(ex.name || ex.student_name || "").trim();
+    var sPhone = String(ex.phone || ex.student_phone || "").trim();
+    if(sName.toLowerCase().indexOf("رەھىمە") >= 0 || sName.toLowerCase().indexOf("rehime") >= 0) return false;
+    if(sPhone === "5516862398" || sPhone === "5516862393") return false;
+    if(EXCLUDED_TEST_PHONES.includes(sPhone)) return false;
+    if(delP.includes(sPhone)) return false;
+    if(delN.includes(sName)) return false;
+    return true;
+  });
+
+  _currentExamsList = allEx;
+
+  // Update Summary Statistics Cards
+  var total = allEx.length;
+  var passed = allEx.filter(function(e){ return (e.pct != null ? e.pct : e.score) >= 60; }).length;
+  var passRate = total ? Math.round(passed / total * 100) : 0;
+  var sumScores = allEx.reduce(function(acc, e){ return acc + (e.pct != null ? e.pct : (e.score || 0)); }, 0);
+  var avg = total ? Math.round(sumScores / total) : 0;
+  var top = allEx.filter(function(e){ return (e.pct != null ? e.pct : e.score) >= 90; }).length;
+
+  var elTot = document.getElementById("exStatTotal");
+  if(elTot) elTot.textContent = total;
+  var elPass = document.getElementById("exStatPassed");
+  if(elPass) elPass.textContent = passed;
+  var elRate = document.getElementById("exStatPassRate");
+  if(elRate) elRate.textContent = "ئۆتۈش نىسبىتى %" + passRate;
+  var elAvg = document.getElementById("exStatAvg");
+  if(elAvg) elAvg.textContent = "%" + avg;
+  var elTop = document.getElementById("exStatTop");
+  if(elTop) elTop.textContent = top;
+
+  var elBadge = document.getElementById("examsBadgeSide");
+  if(elBadge){
+    elBadge.style.display = total > 0 ? "inline-block" : "none";
+    elBadge.textContent = total;
+  }
+  var elStExams = document.getElementById("stExams");
+  if(elStExams) elStExams.textContent = total;
+
+  var countDisp = document.getElementById("examCountDisplay");
+  if(countDisp) countDisp.textContent = total + " نەتىجە تېپىلدى";
+
+  // Render both tables
+  renderFilteredExamsList(allEx);
+}
+
+function filterExamsTable(){
+  var searchInp = document.getElementById("searchExamsInput");
+  var statusSel = document.getElementById("filterExamStatus");
+  var term = searchInp ? searchInp.value.trim().toLowerCase() : "";
+  var status = statusSel ? statusSel.value : "all";
+
+  var filtered = _currentExamsList.filter(function(ex){
+    var sName = String(ex.name || ex.student_name || "").toLowerCase();
+    var sPhone = String(ex.phone || ex.student_phone || "");
+    var scope = String(ex.scope || "").toLowerCase();
+    if(term && sName.indexOf(term) < 0 && sPhone.indexOf(term) < 0 && scope.indexOf(term) < 0) return false;
+    var pct = ex.pct != null ? ex.pct : (ex.score != null ? ex.score : 0);
+    if(status === "pass" && pct < 60) return false;
+    if(status === "fail" && pct >= 60) return false;
+    return true;
+  });
+
+  var countDisp = document.getElementById("examCountDisplay");
+  if(countDisp) countDisp.textContent = filtered.length + " نەتىجە تېپىلدى";
+
+  renderFilteredExamsList(filtered);
+}
+
+function renderFilteredExamsList(list){
+  var tbodyEx = document.getElementById("examsTableBody");
+  var tbodyDedicated = document.getElementById("dedicatedExamsTableBody");
+
+  if(!list || !list.length){
+    var emptyRow = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.5rem">تېخى ئىمتىھان تاپشۇرۇش خاتىرىسى يوق.</td></tr>';
+    if(tbodyEx) tbodyEx.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">تېخى ئىمتىھان خاتىرىسى يوق.</td></tr>';
+    if(tbodyDedicated) tbodyDedicated.innerHTML = emptyRow;
     return;
   }
-  tbodyEx.innerHTML = "";
-  allEx.forEach(function(ex){
-    var tr = document.createElement("tr");
+
+  if(tbodyEx) tbodyEx.innerHTML = "";
+  if(tbodyDedicated) tbodyDedicated.innerHTML = "";
+
+  list.forEach(function(ex){
     var isPass = (ex.pct != null ? ex.pct : ex.score) >= 60;
     var sName = ex.name || (ex.student_name ? ex.student_name : "ئوقۇغۇچى");
     var sPhone = ex.phone || ex.student_phone || "-";
     var pctVal = ex.pct != null ? ex.pct : (ex.score != null ? ex.score : 0);
     var countVal = ex.count != null ? ex.count : (ex.total_questions != null ? ex.total_questions : 0);
-    tr.innerHTML = '<td><b>' + esc(sName) + '</b></td>'
-      + '<td dir="ltr" style="text-align:right">' + esc(sPhone) + '</td>'
-      + '<td>' + esc(ex.when || ex.taken_at || "") + '</td>'
-      + '<td>' + esc(ex.scope || "ئومۇمىي") + '</td>'
-      + '<td>' + countVal + ' سوئال</td>'
-      + '<td><b>%' + pctVal + '</b></td>'
-      + '<td><span class="badge ' + (isPass?'badge-green':'badge-red') + '">' + (isPass?'ئۆتتى ✅':'قايتا سىناڭ') + '</span></td>';
-    tbodyEx.appendChild(tr);
+    var whenVal = ex.when || ex.taken_at || "";
+    var scopeVal = ex.scope || "ئومۇمىي";
+
+    // Row for p-students table
+    if(tbodyEx){
+      var tr1 = document.createElement("tr");
+      tr1.innerHTML = '<td><b>' + esc(sName) + '</b></td>'
+        + '<td dir="ltr" style="text-align:right">' + esc(sPhone) + '</td>'
+        + '<td>' + esc(whenVal) + '</td>'
+        + '<td>' + esc(scopeVal) + '</td>'
+        + '<td>' + countVal + ' سوئال</td>'
+        + '<td><b>%' + pctVal + '</b></td>'
+        + '<td><span class="badge ' + (isPass?'badge-green':'badge-red') + '">' + (isPass?'ئۆتتى ✅':'قايتا سىناڭ') + '</span></td>';
+      tbodyEx.appendChild(tr1);
+    }
+
+    // Row for dedicated p-exams table
+    if(tbodyDedicated){
+      var tr2 = document.createElement("tr");
+      var passBadge = isPass
+        ? '<span class="badge badge-green" style="font-weight:bold">✅ ئۆتتى (%' + pctVal + ')</span>'
+        : '<span class="badge badge-red" style="font-weight:bold">❌ قايتا سىناڭ (%' + pctVal + ')</span>';
+      
+      var scoreBar = '<div style="display:flex;align-items:center;gap:.4rem">'
+        + '<div style="flex:1;background:var(--line);height:8px;border-radius:4px;overflow:hidden;min-width:60px">'
+        + '<div style="width:' + Math.min(100, Math.max(0, pctVal)) + '%;background:' + (isPass?'var(--green)':'var(--red)') + ';height:100%"></div>'
+        + '</div><b style="font-size:.9rem">%' + pctVal + '</b></div>';
+
+      tr2.innerHTML = '<td><b>' + esc(sName) + '</b></td>'
+        + '<td dir="ltr" style="text-align:right;font-family:monospace">' + esc(sPhone) + '</td>'
+        + '<td style="font-size:.88rem;color:var(--muted)">' + esc(whenVal) + '</td>'
+        + '<td><span class="badge" style="background:#e0f2fe;color:#0369a1">' + esc(scopeVal) + '</span></td>'
+        + '<td>' + countVal + ' سوئال</td>'
+        + '<td>' + scoreBar + '</td>'
+        + '<td>' + passBadge + '</td>'
+        + '<td style="text-align:center"><button class="btn btn-line btn-sm" onclick="deleteSingleExam(\'' + esc(sPhone) + '\', \'' + esc(whenVal) + '\')" style="color:var(--red);border-color:var(--red);padding:.2rem .5rem" title="ئۆچۈرۈش">🗑️</button></td>';
+      tbodyDedicated.appendChild(tr2);
+    }
   });
+}
+
+function deleteSingleExam(phone, when){
+  if(!confirm("بۇ ئىمتىھان خاتىرىسىنى ئۆچۈرۈشنى جەزملەشتۈرەمسىز؟")) return;
+  var curAllEx = JSON.parse(localStorage.getItem("uytibb_all_exams")||"[]");
+  curAllEx = curAllEx.filter(function(e){
+    return !(String(e.phone||e.student_phone||"").trim() === String(phone).trim() && String(e.when||e.taken_at||"").trim() === String(when).trim());
+  });
+  localStorage.setItem("uytibb_all_exams", JSON.stringify(curAllEx));
+
+  var prog = JSON.parse(localStorage.getItem("uytibb_v1")||"{}");
+  if(prog.exams){
+    prog.exams = prog.exams.filter(function(e){
+      return !(String(e.phone||"").trim() === String(phone).trim() && String(e.when||"").trim() === String(when).trim());
+    });
+    localStorage.setItem("uytibb_v1", JSON.stringify(prog));
+  }
+
+  fetch("/api/students", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete_exam", phone: phone, when: when })
+  }).catch(function(){});
+
+  renderExamsTable(curAllEx);
+  showToast("🗑️ ئىمتىھان خاتىرىسى ئۆچۈرۈلدى.");
+}
+
+function clearAllExamsData(){
+  if(!confirm("ھەقىقەتەن بارلىق تاپشۇرۇلغان ئىمتىھان خاتىرىلىرىنى ئۆچۈرۈپ نۆللىمەكچىمۇسىز؟")) return;
+  localStorage.removeItem("uytibb_all_exams");
+  var prog = JSON.parse(localStorage.getItem("uytibb_v1")||"{}");
+  if(prog.exams){
+    prog.exams = [];
+    localStorage.setItem("uytibb_v1", JSON.stringify(prog));
+  }
+  fetch("/api/students", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "clear_all_exams" })
+  }).catch(function(){});
+
+  renderExamsTable([]);
+  showToast("🗑️ بارلىق ئىمتىھانلار نۆللەندى.");
 }
 
 function showApprovalNoticeModal(studentName, studentPhone){

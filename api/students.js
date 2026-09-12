@@ -41,6 +41,7 @@ function sbFetch(path, options = {}) {
 }
 
 const EXCLUDED_TEST_PHONES = ['5551234567', '99900011122', '5516862398', '5016862393', '5516862393', '5559880508', '5315942989', '13800000000', 'admin'];
+const EXCLUDED_TEST_NAMES = ['رەھىمە', 'rehime', 'سىناق ئوقۇغۇچى', 'سىناق'];
 const LAUNCH_CUTOFF = '2026-09-12T11:00:00.000Z';
 
 module.exports = async (req, res) => {
@@ -173,6 +174,18 @@ module.exports = async (req, res) => {
         return res.status(200).json({ status: 'ok', message: 'Reply recorded' });
       }
 
+      // 6. Clear all exams
+      if (data.action === 'clear_all_exams') {
+        inMemoryExams = [];
+        return res.status(200).json({ status: 'ok', message: 'Exams cleared' });
+      }
+
+      // 7. Delete single exam
+      if (data.action === 'delete_exam' && data.phone && data.when) {
+        inMemoryExams = inMemoryExams.filter(e => !(e.phone === data.phone && e.when === data.when));
+        return res.status(200).json({ status: 'ok', message: 'Exam deleted' });
+      }
+
       return res.status(400).json({ status: 'error', message: 'Unknown action' });
     } catch (e) {
       return res.status(500).json({ status: 'error', message: e.message });
@@ -185,7 +198,7 @@ module.exports = async (req, res) => {
     let list = Array.isArray(sbStudents) && sbStudents.length ? sbStudents : inMemoryStudents;
     list = (list || []).filter(s => {
       const nm = (s.name || '').trim();
-      if (nm === 'سىناق ئوقۇغۇچى' || nm === 'سىناق' || nm.startsWith('سىناق')) return false;
+      if (EXCLUDED_TEST_NAMES.some(x => nm.toLowerCase().includes(x.toLowerCase()))) return false;
       const ph = String(s.phone || '').trim();
       if (EXCLUDED_TEST_PHONES.includes(ph)) return false;
       const reg = s.registered_at || s.when || '';
@@ -227,11 +240,27 @@ module.exports = async (req, res) => {
       });
     }
 
+    allExams = allExams.filter(e => {
+      const nm = (e.name || '').trim();
+      const ph = String(e.phone || '').trim();
+      if (EXCLUDED_TEST_NAMES.some(x => nm.toLowerCase().includes(x.toLowerCase()))) return false;
+      if (EXCLUDED_TEST_PHONES.includes(ph)) return false;
+      return true;
+    });
+
+    let cleanFeedback = inMemoryFeedback.filter(f => {
+      const nm = (f.name || f.student_name || '').trim();
+      const ph = String(f.phone || f.student_phone || '').trim();
+      if (EXCLUDED_TEST_NAMES.some(x => nm.toLowerCase().includes(x.toLowerCase()))) return false;
+      if (EXCLUDED_TEST_PHONES.includes(ph)) return false;
+      return true;
+    });
+
     return res.status(200).json({
       status: 'ok',
       students: list,
       exams: allExams,
-      feedback: inMemoryFeedback,
+      feedback: cleanFeedback,
       supabaseConnected: true,
       serverTime: new Date().toISOString()
     });
